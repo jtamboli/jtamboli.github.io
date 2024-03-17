@@ -10,40 +10,95 @@
             text-align: center;
         }
     </style>
+    <script src="https://unpkg.com/tubular_astronomy/dist/tubular_astronomy.min.js"></script>
 </head>
 <body>
     <h1>Countdown to Solar Eclipse Totality</h1>
-    <h2>April 8, 2024 - Mammoth Springs, AR</h2>
+    <h2>April 8, 2024</h2>
+    <form>
+        <label for="latitude">Latitude:</label>
+        <input type="text" id="latitude" name="latitude" required>
+        <label for="longitude">Longitude:</label>
+        <input type="text" id="longitude" name="longitude" required>
+        <button type="button" onclick="calculateCountdown()">Calculate</button>
+        <button type="button" onclick="useCurrentLocation()">Use Current Location</button>
+    </form>
     <div id="countdown"></div>
 
     <script>
-        // Set the date and time of the solar eclipse totality
-        const eclipseDate = new Date("April 8, 2024 18:35:00").getTime();
+        async function calculateCountdown() {
+            const latitude = parseFloat(document.getElementById("latitude").value);
+            const longitude = parseFloat(document.getElementById("longitude").value);
 
-        // Update the countdown every second
-        const countdownTimer = setInterval(function() {
-            // Get the current date and time
-            const now = new Date().getTime();
+            // Create a location object using the user's input
+            const location = new tubular_astronomy.Location(latitude, longitude);
 
-            // Calculate the time remaining
-            const timeRemaining = eclipseDate - now;
+            // Set the eclipse date
+            const eclipseDate = new Date("2024-04-08");
 
-            // Calculate days, hours, minutes, and seconds
-            const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+            // Find the solar eclipse event for the given location and date
+            const eventFinder = new tubular_astronomy.EventFinder(location);
+            const eclipseEvent = await eventFinder.findEventAsync(
+                tubular_astronomy.SUN,
+                tubular_astronomy.SOLAR_ECLIPSE_LOCAL,
+                eclipseDate,
+                eclipseDate
+            );
 
-            // Display the countdown
-            document.getElementById("countdown").innerHTML = days + "d " + hours + "h "
-            + minutes + "m " + seconds + "s ";
-
-            // If the countdown is finished, display a message
-            if (timeRemaining < 0) {
-                clearInterval(countdownTimer);
-                document.getElementById("countdown").innerHTML = "The solar eclipse is happening now!";
+            if (eclipseEvent && eclipseEvent.type === tubular_astronomy.SOLAR_ECLIPSE_LOCAL) {
+                const eclipseTime = eclipseEvent.time;
+                displayCountdown(eclipseTime);
+            } else {
+                document.getElementById("countdown").innerHTML = "No solar eclipse found for the given location and date.";
             }
-        }, 1000);
+        }
+
+        function useCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const latitude = position.coords.latitude;
+                        const longitude = position.coords.longitude;
+                        document.getElementById("latitude").value = latitude;
+                        document.getElementById("longitude").value = longitude;
+                        calculateCountdown();
+                    },
+                    function(error) {
+                        console.error("Error getting current location:", error);
+                        alert("Unable to retrieve your location. Please enter the coordinates manually.");
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        function displayCountdown(eclipseTime) {
+            // Update the countdown every second
+            const countdownTimer = setInterval(function() {
+                // Get the current date and time
+                const now = new Date().getTime();
+
+                // Calculate the time remaining
+                const timeRemaining = eclipseTime - now;
+
+                // Calculate days, hours, minutes, and seconds
+                const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+
+                // Display the countdown
+                document.getElementById("countdown").innerHTML = days + "d " + hours + "h "
+                + minutes + "m " + seconds + "s ";
+
+                // If the countdown is finished, display a message
+                if (timeRemaining < 0) {
+                    clearInterval(countdownTimer);
+                    document.getElementById("countdown").innerHTML = "The solar eclipse is happening now!";
+                }
+            }, 1000);
+        }
     </script>
 </body>
 </html>
